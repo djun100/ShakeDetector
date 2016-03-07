@@ -30,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.tbouron.shakedetector.library.ShakeDetector;
-import com.github.tbouron.shakedetector.example.R;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -146,10 +145,10 @@ public class MainActivity extends ActionBarActivity implements ShakeDetector.OnS
     }
 
     @Override
-    public void OnShake() {
+    public void OnShake(float rate) {
         // This callback is triggered by the ShakeDetector. In a real implementation, you should
         // do here a real action.
-        addStatusMessage(getString(R.string.shake_detected));
+        addStatusMessage(getString(R.string.shake_detected)+" rate:"+rate);
         Toast.makeText(this, getString(R.string.device_shaken), Toast.LENGTH_SHORT).show();
     }
 

@@ -23,6 +23,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -93,18 +94,22 @@ import java.util.ArrayList;
 public class ShakeDetector implements SensorEventListener {
 
     private static final float DEFAULT_THRESHOLD_ACCELERATION = 2.0f;
-    private static final int DEFAULT_THRESHOLD_SHAKE_NUMBER = 3;
+    private static final int DEFAULT_THRESHOLD_SHAKE_NUMBER = 1;
     private static final int INTERVAL = 200;
 
     private static SensorManager mSensorManager;
     private static ShakeDetector mSensorEventListener;
 
     private OnShakeListener mShakeListener;
-    private ArrayList<SensorBundle> mSensorBundles;
+    private static ArrayList<SensorBundle> mSensorBundles;
     private Object mLock;
     private float mThresholdAcceleration;
     private int mThresholdShakeNumber;
 
+    private static int mShakeTimes;
+    private static long mShakeDuration;
+    private static long mShakeTimeBegin;
+    private static long mShakeTimeEnd;
     /**
      * Interface definition for a callback to be invoked when the device has been shaken.
      */
@@ -112,7 +117,7 @@ public class ShakeDetector implements SensorEventListener {
         /**
          * Called when the device has been shaken.
          */
-        public void OnShake();
+        public void OnShake(float rate);
     }
 
     /**
@@ -143,6 +148,8 @@ public class ShakeDetector implements SensorEventListener {
      * @return true if the shake detector has been started correctly, false otherwise.
      */
     public static boolean start() {
+        mShakeDuration=mShakeTimes=0;
+        mShakeTimeBegin=mShakeTimeEnd=0;
         if (mSensorManager != null && mSensorEventListener != null) {
             return mSensorManager.registerListener(mSensorEventListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_GAME);
         }
@@ -154,6 +161,7 @@ public class ShakeDetector implements SensorEventListener {
      * will do anything.
      */
     public static void stop() {
+        mSensorBundles.clear();
         if (mSensorManager != null) {
             mSensorManager.unregisterListener(mSensorEventListener);
         }
@@ -222,6 +230,7 @@ public class ShakeDetector implements SensorEventListener {
     }
 
     private void performCheck() {
+
         synchronized (mLock) {
             int[] vector = {0, 0, 0};
             int[][] matrix = {
@@ -264,8 +273,22 @@ public class ShakeDetector implements SensorEventListener {
                     }
                 }
             }
-
-            mShakeListener.OnShake();
+            if (mShakeTimeBegin==0){
+                mShakeTimeBegin=System.currentTimeMillis();
+            }
+            mShakeTimeEnd=System.currentTimeMillis();
+            mShakeDuration=mShakeTimeEnd-mShakeTimeBegin;
+            if (mShakeDuration==0){
+                return;
+            }
+            mShakeTimes+=1;
+            try {
+                float rate=  (float) mShakeTimes/(mShakeDuration/1000);
+                Log.e("","mShakeTimes:"+mShakeTimes+" mShakeDuration/1000:"+mShakeDuration/1000);
+                mShakeListener.OnShake(rate);
+            } catch (Exception e) {
+                Log.e("",e.getMessage());
+            }
             mSensorBundles.clear();
         }
     }
